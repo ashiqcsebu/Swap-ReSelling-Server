@@ -34,6 +34,25 @@ function verifyingToken(req, res, next) {
 }
 
 
+async function run() {
+  try {
+    const userscollection = client.db("swapdb").collection("users");
+    const productcategoriesCollection = client.db("swapdb").collection("productcategories");
+    const allProductscollection = client.db("swapdb").collection("allProducts");
+    const bookedproductcollection = client.db("swapdb").collection("bookedproduct");
+
+    // A function for veryfy admin
+    const adminVerify = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await userscollection.findOne(query);
+
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
 
 
 
