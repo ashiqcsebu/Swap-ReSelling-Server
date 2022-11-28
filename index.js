@@ -128,6 +128,21 @@ async function run() {
       res.send(result);
     });
 
+// get my product
+      // jwt will be apply here
+      app.get("/myproduct", verifyingToken, async (req, res) => {
+        const email = req.query.email;
+        const decodedEmail = req.decoded.email;
+        if (email !== decodedEmail) {
+          return res.status(403).send({ message: "forbidden access" });
+        }
+        const query = { userEmail: email };
+        const result = await allProductscollection.find(query).toArray();
+        res.send(result);
+      });
+  
+
+
 
 
 
