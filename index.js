@@ -63,6 +63,13 @@ async function run() {
         res.send(categoriyes);
       });
   
+  // get spcifiq data
+  app.get("/categories/:id", async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: ObjectId(id) };
+    const categore = await productcategoriesCollection.findOne(query);
+    res.send(categore);
+  });
 
 
 
