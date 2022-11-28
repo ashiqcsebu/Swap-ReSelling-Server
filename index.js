@@ -71,7 +71,13 @@ async function run() {
     res.send(categore);
   });
 
-
+ // get booked product for buying
+ app.get("/product/parces/:id", async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: ObjectId(id) };
+  const result = await bookedproductcollection.findOne(query);
+  res.send(result);
+});
 
 
 
