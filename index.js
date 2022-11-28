@@ -53,6 +53,16 @@ async function run() {
       next();
     };
 
+ // get  opareton
+  // get all categories data
+      app.get("/categories", async (req, res) => {
+        const query = {};
+        const categoriyes = await productcategoriesCollection
+          .find(query)
+          .toArray();
+        res.send(categoriyes);
+      });
+  
 
 
 
