@@ -79,6 +79,19 @@ async function run() {
   res.send(result);
 });
 
+  // get all seller -- jwt & admin route
+  app.get("/seller", verifyingToken, adminVerify, async (req, res) => {
+    const email = req.query.email;
+    const decodedEmail = req.decoded.email;
+    if (email !== decodedEmail) {
+      return res.status(403).send({ message: "forbidden access" });
+    }
+    const query = { role: "seller" };
+    const seller = await userscollection.find(query).toArray();
+    res.send(seller);
+  });
+
+
 
 
 
