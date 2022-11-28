@@ -112,7 +112,21 @@ async function run() {
       const seller = await userscollection.find(query).toArray();
       res.send(seller);
     });
-
+    // get similar type of data
+    app.get("/allproducts/", verifyingToken, async (req, res) => {
+      const email = req.query.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const brand_name = req.query.category_name;
+      const query = { 
+        brand_name: brand_name,
+        sold: false
+     };
+      const result = await allProductscollection.find(query).toArray();
+      res.send(result);
+    });
 
 
 
