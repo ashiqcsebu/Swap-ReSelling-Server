@@ -91,6 +91,27 @@ async function run() {
     res.send(seller);
   });
 
+     // get campain data
+     app.get("/campain", async (req, res) => {
+      const query = {
+        campain: true,
+        sold:false
+      };
+      const campaininfo = await allProductscollection.find(query).toArray();
+      res.send(campaininfo);
+    });
+
+    // get all seller
+    app.get("/bayer", verifyingToken, adminVerify, async (req, res) => {
+      const email = req.query.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const query = { role: "bayer" };
+      const seller = await userscollection.find(query).toArray();
+      res.send(seller);
+    });
 
 
 
