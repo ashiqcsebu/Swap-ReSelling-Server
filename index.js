@@ -141,7 +141,271 @@ async function run() {
         res.send(result);
       });
   
+ // get jwt token for admin and seller
+ app.get("/jwt", async (req, res) => {
+  const email = req.query.email;
+  const query = { email: email };
+  const user = await userscollection.findOne(query);
+  if (user) {
+    const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
+      expiresIn: "8h",
+    });
+    return res.send({ jwtToken: token });
+  }
+  res
+    .status(403)
+    .send({ jwtToken: "sorry you have not permissiton for access" });
+});
 
+// get admin access
+app.get("/users/admin/:email", async (req, res) => {
+  const email = req.params.email;
+  const query = { email };
+  const user = await userscollection.findOne(query);
+  res.send({ isAdmin: user?.role === "admin" });
+});
+
+// get seller access
+app.get("/users/seller/:email", async (req, res) => {
+  const email = req.params.email;
+  const query = { email };
+  const user = await userscollection.findOne(query);
+  res.send({ isSeller: user?.role === "seller" });
+});
+
+// get my booking
+app.get("/bookingproduct", verifyingToken, async (req, res) => {
+  const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const query = { email: email };
+  const mybooking = await bookedproductcollection.find(query).toArray();
+  res.send(mybooking);
+});
+
+// get reported items :
+app.get('/report', verifyingToken, adminVerify, async (req,res)=>{
+  const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const query = { report : true }
+  const result = await allProductscollection.find(query).toArray()
+  res.send(result)
+})
+// get spacefiq user info
+
+app.get("/user", async (req, res) => {
+  const username = req.query.sellerName;
+  const query = { name: username };
+  const result = await userscollection.findOne(query);
+  res.send(result);
+});
+
+// post
+
+// payment system
+app.post("/create-payment-intent", async (req, res) => {
+  const booking = req.body;
+  const price = parseInt(booking.product_price);
+  const amount = price * 100;
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount,
+    currency: "usd",
+    payment_method_types: ["card"],
+  });
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+});
+// sotre user info
+app.post("/users", async (req, res) => {
+  const user = req.body;
+  const result = await userscollection.insertOne(user);
+  res.send(result);
+});
+
+// store product in db , only seller can do it,jwt apply here
+app.post("/allproducts", verifyingToken, async (req, res) => {
+  const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const products = req.body;
+  const result = await allProductscollection.insertOne(products);
+  res.send(result);
+});
+
+// verifyingToken,
+app.post("/bookingproduct", verifyingToken, async (req, res) => {
+  const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const bookedproduct = req.body;
+  const result = await bookedproductcollection.insertOne(bookedproduct);
+  res.send(result);
+});
+
+// updata / put
+
+//    verify batch for verified user,
+
+app.put("/users", verifyingToken, async (req, res) => {
+  const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const id = req.query.userid;
+  console.log(id);
+  const filter = { _id: ObjectId(id) };
+  const options = { upsert: true };
+  const updateDoc = {
+    $set: {
+      verified: true,
+    },
+  };
+
+  const result = await userscollection.updateOne(
+    filter,
+    updateDoc,
+    options
+  );
+  res.send(result);
+});
+
+// store payment info
+app.put("/addpayment", verifyingToken, async (req, res) => {
+  const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const sellerEmail = req.query.sellerEmail;
+  const productName = req.query.product_name;
+
+  const filter = {
+    userEmail:sellerEmail,
+    product_name:productName
+
+   };
+  const options = { upsert: true };
+  const updateDoc = {
+    $set: {
+      sold: true,
+      campain: false,
+
+    },
+  };
+
+  const result = await allProductscollection.updateOne(
+    filter,
+    updateDoc,
+    options
+  );
+  res.send(result);
+});
+
+// store payment info
+app.put("/addpaymentinbooked", verifyingToken, async (req, res) => {
+  const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const sellerEmail = req.query.sellerEmail;
+  const productName = req.query.product_name;
+
+  const filter = {
+    sellerEmail:sellerEmail,
+    product_name:productName
+
+   };
+  const options = { upsert: true };
+  const updateDoc = {
+    $set: {
+      sold: true,
+    },
+  };
+
+  const result = await bookedproductcollection.updateOne(
+    filter,
+    updateDoc,
+    options
+  );
+  res.send(result);
+});
+
+
+// capmaining products
+app.put("/campain", verifyingToken, async (req, res) => {
+  const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const id = req.query.productId;
+  console.log(id);
+  const filter = { _id: ObjectId(id) };
+  const options = { upsert: true };
+  const updateDoc = {
+    $set: {
+      campain: true,
+    },
+  };
+
+  const result = await allProductscollection.updateOne(
+    filter,
+    updateDoc,
+    options
+  );
+  res.send(result);
+});
+
+// report a  products
+app.put("/report", verifyingToken, async (req, res) => {
+  const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (email !== decodedEmail) {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const id = req.query.id;
+  console.log(id);
+  const filter = { _id: ObjectId(id) };
+  const options = { upsert: true };
+  const updateDoc = {
+    $set: {
+      report: true
+    },
+  };
+
+  const result = await allProductscollection.updateOne(
+    filter,
+    updateDoc,
+    options
+  );
+  res.send(result);
+});
+
+// delelte
+
+app.delete('/deleteuser', async (req,res)=>{
+  const id = req.query.id
+  const query = { _id: ObjectId(id)}
+  const result = await userscollection.deleteOne(query)
+  res.send(result)
+})
+
+
+} finally {
+}
+}
 
 
 
